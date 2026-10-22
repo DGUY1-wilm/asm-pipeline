@@ -26,6 +26,22 @@ CREATE TABLE IF NOT EXISTS services (
     last_seen   TEXT NOT NULL,
     PRIMARY KEY (ip, port, protocol)
 );
+
+CREATE TABLE IF NOT EXISTS findings (
+    ip             TEXT NOT NULL,
+    port           TEXT NOT NULL,
+    scanner        TEXT NOT NULL,
+    check_id       TEXT NOT NULL,
+    name           TEXT NOT NULL,
+    severity       REAL NOT NULL,
+    severity_label TEXT,
+    cves           TEXT,
+    qod            INTEGER,
+    solution       TEXT,
+    first_seen     TEXT NOT NULL,
+    last_seen      TEXT NOT NULL,
+    PRIMARY KEY (ip, port, scanner, check_id)
+);
 """
 
 
