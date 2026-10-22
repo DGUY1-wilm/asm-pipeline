@@ -1,0 +1,14 @@
+# Raw scan output stays local (scan results map your weaknesses)
+scans/
+
+# SQLite database files
+*.db
+
+# Python virtual environment
+.venv/
+
+# Python bytecode caches
+__pycache__/
+
+# pytest cache (we'll use pytest in Milestone 6)
+.pytest_cache/
