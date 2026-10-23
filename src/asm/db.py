@@ -76,7 +76,6 @@ CREATE TABLE IF NOT EXISTS finding_scores (
     due_date      TEXT NOT NULL,
     scored_at     TEXT NOT NULL,
     PRIMARY KEY (ip, port, scanner, check_id)
-
 );
 
 CREATE TABLE IF NOT EXISTS tickets (
@@ -89,6 +88,12 @@ CREATE TABLE IF NOT EXISTS tickets (
     closed_at  TEXT
 );
 
+CREATE TABLE IF NOT EXISTS scan_runs (
+    scanner   TEXT NOT NULL,
+    ip        TEXT NOT NULL,
+    scan_time TEXT NOT NULL,
+    PRIMARY KEY (scanner, ip, scan_time)
+);
 """
 
 

@@ -73,6 +73,17 @@ def parse_report(xml_path):
     return scan_time, len(results), findings
 
 
+def scanned_ips(xml_path):
+    """Every host in the report's results, including hosts with only Log results."""
+    root = ET.parse(xml_path).getroot()
+    ips = set()
+    for result in root.findall("report/report/results/result"):
+        host = result.find("host")
+        if host is not None and host.text:
+            ips.add(host.text.strip())
+    return ips
+
+
 FINDING_UPSERT = """
 INSERT INTO findings (ip, port, scanner, check_id, name, severity, severity_label,
                       cves, qod, solution, first_seen, last_seen)
@@ -97,6 +108,14 @@ def save_findings(con, scan_time, findings):
             con.execute(FINDING_UPSERT, {**finding, "scanner": SCANNER, "seen": scan_time})
 
 
+def save_scan_run(con, scan_time, ips):
+    """Record which hosts this scan covered, so absent findings can be trusted as fixed."""
+    with con:
+        for ip in ips:
+            con.execute("INSERT OR IGNORE INTO scan_runs VALUES (?, ?, ?)",
+                        (SCANNER, ip, scan_time))
+
+
 def main():
     parser = argparse.ArgumentParser(description="Load OpenVAS XML reports into SQLite.")
     parser.add_argument("xml_files", nargs="+", help="OpenVAS report XML file(s)")
@@ -107,8 +126,11 @@ def main():
     for path in args.xml_files:
         scan_time, total, findings = parse_report(path)
         save_findings(con, scan_time, findings)
+        hosts = scanned_ips(path)
+        save_scan_run(con, scan_time, hosts)
+
         print(f"{path}: {total} results, {len(findings)} findings stored "
-              f"(severity > 0), scan started {scan_time}")
+              f"(severity > 0), scan started {scan_time}, hosts: {', '.join(sorted(hosts))}")
         counts = Counter(finding["severity_label"] for finding in findings)
         for label, count in counts.most_common():
             print(f"  {label}: {count}")

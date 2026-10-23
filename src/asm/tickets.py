@@ -1,8 +1,10 @@
-"""Create Jira tickets for P1/P2 findings, one ticket per affected service (host + port).
+"""Create and close Jira tickets for P1/P2 findings, one ticket per affected service.
 
 Usage (from the project root, with JIRA_SITE, JIRA_EMAIL, and JIRA_TOKEN exported):
-    python3 -m src.asm.tickets --dry-run
-    python3 -m src.asm.tickets --project ASM
+    python3 -m src.asm.tickets --dry-run            # preview new tickets
+    python3 -m src.asm.tickets --project ASM        # create new tickets
+    python3 -m src.asm.tickets --close --dry-run    # preview tickets that would close
+    python3 -m src.asm.tickets --close              # close resolved tickets
 """
 import argparse
 import os
@@ -25,6 +27,11 @@ SELECT f.ip, f.port, f.name, f.severity, f.solution,
 FROM finding_scores s JOIN findings f USING (ip, port, scanner, check_id)
 ORDER BY s.priority, s.sort_score DESC
 """
+
+
+def now_utc():
+    """Current time as an ISO 8601 UTC string, matching the rest of the project."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def jira_config():
@@ -119,46 +126,105 @@ def create_issue(site, auth, fields):
     return response.json()["key"]
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Create Jira tickets for P1/P2 findings.")
-    parser.add_argument("--db", default="asm.db", help="SQLite database path")
-    parser.add_argument("--owners", default="config/owners.yaml", help="Asset ownership config")
-    parser.add_argument("--project", default=os.environ.get("JIRA_PROJECT", "ASM"),
-                        help="Jira project key (default: $JIRA_PROJECT or ASM)")
-    parser.add_argument("--dry-run", action="store_true", help="Show tickets without creating them")
-    args = parser.parse_args()
-
-    owners = load_yaml(args.owners)
-    con = connect(args.db)
+def create_tickets(con, owners, project_key, dry_run):
+    """Create one ticket per P1/P2 service group that doesn't already have an open ticket."""
     groups = group_findings(con)
     open_services = set(con.execute("SELECT ip, port FROM tickets WHERE status = 'open'"))
-    if not args.dry_run:
+    if not dry_run:
         site, auth = jira_config()
 
     created = skipped = 0
     for (ip, port), findings in groups.items():
-        priority, fields = build_ticket(ip, port, findings, owners, args.project)
+        priority, fields = build_ticket(ip, port, findings, owners, project_key)
         if priority not in TICKET_PRIORITIES:
             continue
         if (ip, port) in open_services:
             skipped += 1
             continue
-        if args.dry_run:
+        if dry_run:
             print(f"[dry run] {fields['summary']} | due {fields['duedate']} | {len(findings)} finding(s)")
             continue
 
         key = create_issue(site, auth, fields)
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         with con:
             con.execute(
                 "INSERT INTO tickets (jira_key, ip, port, priority, status, created_at) "
                 "VALUES (?, ?, ?, ?, 'open', ?)",
-                (key, ip, port, priority, now),
+                (key, ip, port, priority, now_utc()),
             )
         print(f"Created {key}: {fields['summary']}")
         created += 1
 
     print(f"Done: {created} created, {skipped} skipped (already open)")
+
+
+def close_issue(site, auth, key, note):
+    """Comment on a Jira issue, then move it to a Done status."""
+    base = f"{site}/rest/api/3/issue/{key}"
+    response = requests.get(f"{base}/transitions", auth=auth, timeout=TIMEOUT)
+    response.raise_for_status()
+    done = [t for t in response.json()["transitions"]
+            if t["to"]["statusCategory"]["key"] == "done"]
+    if not done:
+        raise SystemExit(f"{key}: no transition to a Done status is available")
+
+    requests.post(f"{base}/comment", json={"body": to_adf([note])},
+                  auth=auth, timeout=TIMEOUT).raise_for_status()
+    requests.post(f"{base}/transitions", json={"transition": {"id": done[0]["id"]}},
+                  auth=auth, timeout=TIMEOUT).raise_for_status()
+
+
+def close_resolved(con, dry_run):
+    """Close open tickets whose findings were absent from a newer scan of the same host."""
+    if not dry_run:
+        site, auth = jira_config()
+    open_tickets = con.execute(
+        "SELECT jira_key, ip, port FROM tickets WHERE status = 'open'"
+    ).fetchall()
+
+    closed = 0
+    for key, ip, port in open_tickets:
+        latest_scan = con.execute(
+            "SELECT MAX(scan_time) FROM scan_runs WHERE ip = ?", (ip,)
+        ).fetchone()[0]
+        last_seen = con.execute(
+            "SELECT MAX(last_seen) FROM findings WHERE ip = ? AND port = ?", (ip, port)
+        ).fetchone()[0]
+        if latest_scan is None or last_seen is None or last_seen >= latest_scan:
+            continue  # never rescanned, or still detected
+
+        note = (f"Resolved by asm-pipeline: the rescan at {latest_scan} no longer detects "
+                f"findings on {ip} {port} (last seen {last_seen}).")
+        if dry_run:
+            print(f"[dry run] would close {key}: {note}")
+            continue
+        close_issue(site, auth, key, note)
+        with con:
+            con.execute("UPDATE tickets SET status = 'closed', closed_at = ? WHERE jira_key = ?",
+                        (now_utc(), key))
+        print(f"Closed {key}: {note}")
+        closed += 1
+
+    print(f"Done: {closed} ticket(s) closed")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Create or close Jira tickets for findings.")
+    parser.add_argument("--db", default="asm.db", help="SQLite database path")
+    parser.add_argument("--owners", default="config/owners.yaml", help="Asset ownership config")
+    parser.add_argument("--project", default=os.environ.get("JIRA_PROJECT", "ASM"),
+                        help="Jira project key (default: $JIRA_PROJECT or ASM)")
+    parser.add_argument("--close", action="store_true",
+                        help="Close tickets whose findings are gone in a newer scan")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Show what would happen without changing Jira")
+    args = parser.parse_args()
+
+    con = connect(args.db)
+    if args.close:
+        close_resolved(con, args.dry_run)
+    else:
+        create_tickets(con, load_yaml(args.owners), args.project, args.dry_run)
     con.close()
 
 
