@@ -174,6 +174,8 @@ tickets and comments on each with the rescan evidence.
 
 ![Auto-close via CLI](docs/09b-autoclose-cli.png)
 
+![Closed Jira ticket with evidence comment](docs/09-jira-closed-ticket.png)
+
 The fix is also confirmed independently of the pipeline — an Nmap check from the scanner's
 point of view showing the ports are now closed.
 
@@ -190,6 +192,7 @@ The parsers and scoring logic are covered by pytest, which runs on every push vi
 Actions.
 
 ![Passing tests](docs/10-pytest.png)
+![GitHub Actions CI](docs/11-github-actions.png)
 
 ---
 
