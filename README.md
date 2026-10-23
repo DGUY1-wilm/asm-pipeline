@@ -233,10 +233,3 @@ I kept a running list of honest limitations rather than hiding them:
 
 ---
 
-## A note on AI use
-
-I used an AI assistant as a pair-programming mentor throughout this project. It explained
-concepts, generated and reviewed code, and helped me debug. I ran, tested, and verified
-everything myself, debugged the real-world failures (there were many), and made the design
-decisions. `AI_USAGE.md` records what was AI-generated versus what I wrote and did myself.
-I can explain every part of this project.
