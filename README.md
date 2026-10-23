@@ -5,7 +5,7 @@ the findings using real exploitability data, and tracks remediation to closure t
 Jira. Built as a portfolio project for an Attack Surface Management security engineering
 role.
 
-![Tests](https://github.com/YOUR-USERNAME/asm-pipeline/actions/workflows/ci.yml/badge.svg)
+![Tests](https://github.com/DGUY1-Wilm/asm-pipeline/actions/workflows/ci.yml/badge.svg)
 
 > **Scope and safety:** every scan in this project targets only machines I own, on an
 > isolated virtual network that cannot reach the internet or any third-party system.
