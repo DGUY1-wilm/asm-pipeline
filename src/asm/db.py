@@ -42,6 +42,23 @@ CREATE TABLE IF NOT EXISTS findings (
     last_seen      TEXT NOT NULL,
     PRIMARY KEY (ip, port, scanner, check_id)
 );
+
+CREATE TABLE IF NOT EXISTS kev (
+    cve        TEXT PRIMARY KEY,
+    vendor     TEXT,
+    product    TEXT,
+    vuln_name  TEXT,
+    date_added TEXT,
+    due_date   TEXT,
+    ransomware TEXT
+);
+
+CREATE TABLE IF NOT EXISTS epss (
+    cve        TEXT PRIMARY KEY,
+    epss       REAL NOT NULL,
+    percentile REAL NOT NULL,
+    score_date TEXT
+);
 """
 
 

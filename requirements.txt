@@ -1,1 +1,2 @@
 python-gvm==27.10.1
+requests==2.34.2
