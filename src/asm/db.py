@@ -78,6 +78,17 @@ CREATE TABLE IF NOT EXISTS finding_scores (
     PRIMARY KEY (ip, port, scanner, check_id)
 
 );
+
+CREATE TABLE IF NOT EXISTS tickets (
+    jira_key   TEXT PRIMARY KEY,
+    ip         TEXT NOT NULL,
+    port       TEXT NOT NULL,
+    priority   TEXT NOT NULL,
+    status     TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    closed_at  TEXT
+);
+
 """
 
 
