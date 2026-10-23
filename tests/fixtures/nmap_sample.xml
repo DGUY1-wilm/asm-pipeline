@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<nmaprun scanner="nmap" start="1700000000" version="7.95">
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.10" addrtype="ipv4"/>
+    <address addr="AA:BB:CC:DD:EE:FF" addrtype="mac" vendor="ExampleVendor"/>
+    <hostnames><hostname name="web01.example.com" type="PTR"/></hostnames>
+    <ports>
+      <port protocol="tcp" portid="22"><state state="open"/><service name="ssh" product="OpenSSH" version="9.6"/></port>
+      <port protocol="tcp" portid="80"><state state="closed"/><service name="http"/></port>
+      <port protocol="tcp" portid="8080"><state state="open"/></port>
+    </ports>
+    <os><osmatch name="Linux 6.X" accuracy="95"/></os>
+  </host>
+  <host>
+    <status state="up"/>
+    <address addr="192.0.2.11" addrtype="ipv4"/>
+    <ports></ports>
+    <os><osmatch name="Garage door opener" accuracy="92"/></os>
+  </host>
+  <host>
+    <status state="down"/>
+    <address addr="192.0.2.12" addrtype="ipv4"/>
+  </host>
+</nmaprun>
