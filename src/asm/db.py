@@ -59,6 +59,25 @@ CREATE TABLE IF NOT EXISTS epss (
     percentile REAL NOT NULL,
     score_date TEXT
 );
+
+CREATE TABLE IF NOT EXISTS finding_scores (
+    ip            TEXT NOT NULL,
+    port          TEXT NOT NULL,
+    scanner       TEXT NOT NULL,
+    check_id      TEXT NOT NULL,
+    priority      TEXT NOT NULL,
+    sort_score    REAL NOT NULL,
+    in_kev        INTEGER NOT NULL,
+    max_epss      REAL,
+    reason        TEXT NOT NULL,
+    owner_team    TEXT NOT NULL,
+    owner_contact TEXT NOT NULL,
+    sla_days      INTEGER NOT NULL,
+    due_date      TEXT NOT NULL,
+    scored_at     TEXT NOT NULL,
+    PRIMARY KEY (ip, port, scanner, check_id)
+
+);
 """
 
 

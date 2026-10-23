@@ -1,0 +1,18 @@
+# Mock asset ownership. In production this would come from a CMDB or cloud tags.
+default_owner:
+  team: "Security Triage (unowned asset)"
+  contact: "secops@example.com"
+
+assets:
+  "192.168.56.103":
+    name: "WIN-SRV-01"
+    team: "Windows Server Team"
+    contact: "windows-team@example.com"
+  "192.168.56.105":
+    name: "LEGACY-LNX-01"
+    team: "Linux Infrastructure Team"
+    contact: "linux-team@example.com"
+  "192.168.56.100":
+    name: "VBOX-DHCP"
+    team: "Lab Network Admin"
+    contact: "netadmin@example.com"

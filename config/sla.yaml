@@ -1,0 +1,5 @@
+# Days allowed to remediate, counted from when a finding was first seen.
+P1: 7
+P2: 30
+P3: 90
+P4: 180
