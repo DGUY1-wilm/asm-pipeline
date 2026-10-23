@@ -12,3 +12,6 @@ __pycache__/
 
 # pytest cache (we'll use pytest in Milestone 6)
 .pytest_cache/
+
+# Generated reports contain vulnerability data
+reports/
